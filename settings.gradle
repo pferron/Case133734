@@ -1,0 +1,8 @@
+pluginManagement {
+    repositories {
+        maven { url = "https://binrepo.target.com/artifactory/plugins-gradle" }
+        maven { url = "https://binrepo.target.com/artifactory/checkout-mod" }
+    }
+}
+rootProject.name = 'web-checkouts-v1'
+enableFeaturePreview('GROOVY_COMPILATION_AVOIDANCE')
