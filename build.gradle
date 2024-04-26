@@ -1,0 +1,323 @@
+import com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer
+
+buildscript {
+    ext {
+        cthulhuVersion = '4.0.2'
+        artifactoryVersion = '4.9.6'
+        ratpackVersion = '1.9.0'
+        ratpackKotlinVersion = '1.8.0'
+        ratpackModulesVersion = '2.6.8'
+        jacksonVersion = '2.10.5'
+        kotlinutilsVersion = '0.1.9'
+        kafkaModulesVersion = '0.13.0'
+        sonarqubeVersion = '2.8'
+        zipkinOkHttpSenderVersion = '2.7.14'
+        braveRatpackVersion = '2.6.0'
+        woodstoxVersion = '4.4.1'
+        log4j2LogstashLayoutVersion = '0.0.3'
+        libtenantVersion = '5.244.0'
+        micrometerVersion = '1.6.1'
+        groovyVersion = '3.0.8'
+        wiremockVersion = '2.32.0'
+        objenesisVersion = '3.0.1'
+        spockVersion = '2.0-groovy-3.0'
+        kotestVersion = '4.3.1'
+        uuidGeneratorFasterXmlVersion = '4.0.1'
+        byteBuddyVersion = '1.9.6'
+        beanutilsVersion = "1.9.4"
+        ktlintVersion = "0.43.0"
+        ktlintPluginVersion = "10.1.0"
+        jacocoVersion = "0.8.5"
+        platformConnectorVersion = "2.4.8"
+        guiceVersion = "5.0.1"
+        javaxElVersion = "3.0.0"
+        hibernateVersion = "6.2.0.Final"
+        httpClientVersion="4.5.13"
+        retroFitVersion="2.5.0"
+        mapStructVersion="1.5.5.Final"
+        kotlinVersion="1.4.32"
+    }
+    repositories {
+        maven { url "https://binrepo.target.com/artifactory/platform" }
+        maven { url 'https://binrepo.target.com/artifactory/maven-central'}
+        maven { url 'https://binrepo.target.com/artifactory/TargetOSS' }
+        maven { url 'https://binrepo.target.com/artifactory/confluent' }
+        maven { url 'https://binrepo.target.com/artifactory/gradle' }
+        maven { url 'https://binrepo.target.com/artifactory/confluent-cache' }
+        maven { url 'https://binrepo.target.com/artifactory/checkout-mod' }
+    }
+    dependencies {
+        classpath "com.target.platform:platform-connector-gradle:${platformConnectorVersion}"
+        classpath "io.ratpack:ratpack-gradle:${ratpackVersion}"
+        classpath "com.target.oss:cthulhu-plugins:${cthulhuVersion}"
+        classpath "org.jfrog.buildinfo:build-info-extractor-gradle:${artifactoryVersion}"
+        classpath "org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:${sonarqubeVersion}"
+    }
+}
+
+plugins {
+    id 'application'
+    id 'idea'
+    id 'org.jetbrains.kotlin.jvm' version "$kotlinVersion"
+    id "org.jetbrains.kotlin.kapt" version "$kotlinVersion"
+    id "org.jlleitschuh.gradle.ktlint" version "$ktlintPluginVersion"
+    id "jacoco"
+    id "org.openapi.generator" version "5.1.1"
+}
+
+apply plugin: "com.target.platform.connector.ratpack"
+apply plugin: "com.github.johnrengelman.shadow"
+apply plugin: 'com.jfrog.artifactory'
+apply plugin: 'cthulhu.release'
+apply plugin: 'cthulhu.test-convention'
+apply plugin: 'maven-publish'
+apply from: "gradle/jacoco.gradle"
+apply from: "gradle/sonar.gradle"
+apply from: "gradle/ktlint.gradle"
+apply from: "gradle/test.gradle"
+
+sourceSets {
+    smoke {
+        groovy.srcDir file('src/test/smoke/groovy')
+        resources.srcDir file('src/test/smoke/resources')
+    }
+}
+
+dependencies {
+    kapt "org.mapstruct:mapstruct-processor:${mapStructVersion}"
+
+    compile "checkout:libtenant:$libtenantVersion"
+    compile "me.drmaas:ratpack-kotlin-dsl:$ratpackKotlinVersion"
+    compile "com.target.carts:tcs-logging-java:1.30.0"
+    compile("com.target.oss.ratpack-modules:ratpack-starter:$ratpackModulesVersion") {
+        exclude group: 'com.graphql-java', module: 'graphql-java-annotations'
+    }
+    compile "com.target.oss.ratpack-modules:ratpack-micrometer-metrics:$ratpackModulesVersion"
+    compile "com.target.oss.ratpack-modules:ratpack-cache:$ratpackModulesVersion"
+    compile "com.fasterxml.jackson.module:jackson-module-afterburner:$jacksonVersion"
+    compile "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    compile "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
+    compile "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$jacksonVersion"
+    compile("com.fasterxml.woodstox:woodstox-core:6.4.0") {
+        because("Added to mitigate security risks, remove this dependency once we are on " +
+                "jackson-dataformat-xml/jackson version >= 2.13.5")
+    }
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-guava:$jacksonVersion"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr353:$jacksonVersion"
+    compile "com.fasterxml.jackson.module:jackson-modules-base:$jacksonVersion"
+    compile "io.zipkin.reporter2:zipkin-sender-okhttp3:$zipkinOkHttpSenderVersion"
+    compile("io.zipkin.brave.ratpack:brave-ratpack:$braveRatpackVersion") {
+        exclude group: 'org.codehaus.groovy', module: 'groovy-all'
+    }
+    compile "org.codehaus.woodstox:woodstox-core-asl:$woodstoxVersion"
+    compile "com.target.oss:kotlinutils:$kotlinutilsVersion"
+    compile "com.target.oss:kafka-ratpack:$kafkaModulesVersion"
+    compile "me.drmaas:log4j2-logstash-layout:$log4j2LogstashLayoutVersion"
+    compile "com.squareup.retrofit2:retrofit:$retroFitVersion"
+    compile "io.micrometer:micrometer-registry-statsd:$micrometerVersion"
+    compile "io.micrometer:micrometer-registry-influx:$micrometerVersion"
+    compile "org.apache.httpcomponents:httpclient:$httpClientVersion"
+    compile "commons-beanutils:commons-beanutils:$beanutilsVersion"
+    compile 'com.tgt.edabi.sapphire:sapphire-qualification-dtos:0.0.2'
+    compile "org.hibernate:hibernate-validator:$hibernateVersion"
+    compile "com.squareup.okio:okio:2.10.0"
+    compile "org.apache.avro:avro:1.11.3"
+    implementation 'commons-validator:commons-validator:1.7'
+    implementation "javax.el:javax.el-api:$javaxElVersion"
+    implementation "com.google.inject:guice:$guiceVersion"
+
+    implementation 'io.opentelemetry:opentelemetry-api:1.20.1'
+
+    implementation "org.mapstruct:mapstruct:${mapStructVersion}"
+    compileOnly 'org.projectlombok:lombok:1.18.26'
+
+    testCompile "org.codehaus.groovy:groovy:$groovyVersion"
+    testCompile "com.target.oss.ratpack-modules:ratpack-test:$ratpackModulesVersion"
+    testCompile "me.drmaas:ratpack-kotlin-test:$ratpackKotlinVersion"
+    testCompile "org.objenesis:objenesis:$objenesisVersion"
+    testCompile "org.spockframework:spock-guice:$spockVersion"
+    testCompile "io.kotest:kotest-assertions-core-jvm:$kotestVersion"
+    testCompile "io.kotest:kotest-runner-junit5-jvm:$kotestVersion"
+    testCompile "io.ratpack:ratpack-remote:$ratpackVersion"
+    testCompile "com.target.oss:kotlinutils:$kotlinutilsVersion"
+    testCompile "io.ratpack:ratpack-groovy-test:$ratpackVersion"
+    testCompile "io.mockk:mockk:1.10.0"
+    testImplementation "com.fasterxml.uuid:java-uuid-generator:${uuidGeneratorFasterXmlVersion}"
+    testImplementation("org.assertj:assertj-core:3.24.2")
+
+    testFunctionalCompile "com.github.tomakehurst:wiremock-jre8:$wiremockVersion"
+    testFunctionalCompile 'org.springframework.kafka:spring-kafka:2.8.6'
+    testFunctionalCompile 'org.springframework.kafka:spring-kafka-test:2.8.6'
+
+    smokeCompile("com.target.carts:jormungandr:0.29.0") {
+        exclude group: 'com.target.digital.checkout.micronaut'
+    }
+}
+
+sourceCompatibility = '11'
+
+// Pretty sure I can remove https://git.target.com/checkout/web_checkouts-v1/issues/68
+artifactoryPublish.skip = true
+
+mainClassName = 'web.ApplicationKt'
+
+tasks.withType(GroovyCompile).configureEach {
+    options.incremental = true
+}
+
+configurations.all {
+    resolutionStrategy {
+        eachDependency { details ->
+            if (details.requested.group.startsWith('com.fasterxml.jackson.')) {
+                details.useVersion "$jacksonVersion"
+            }
+            // forcing this version to resolve vulnerability. It's a transitive dependency of outdated dependencies
+            // so can't update the outdated dependencies to resolve this as of 08-16-2023
+            if (details.requested.group == 'io.netty') {
+                if (details.requested.name == 'netty-handler') {
+                    details.useVersion("4.1.96.Final")
+                }
+            }
+            // forcing this version to resolve snappy-java vulnerability for same reason as netty-handler as of 08-24-2023
+            if (details.requested.group == 'org.xerial.snappy') {
+                if (details.requested.name == 'snappy-java') {
+                    details.useVersion("1.1.10.1")
+                }
+            }
+
+            if (details.requested.group == 'com.google.guava') {
+                if (details.requested.name == 'guava') {
+                    details.useVersion("32.1.0-jre")
+                }
+            }
+        }
+    }
+    exclude group: 'com.target.oss.ratpack-modules', module: 'ratpack-protobuf'
+    // Testng is a testing framework that is a dependency of groovy-all. We don't use this framework, so excluding it to remediate the vulnerability
+    // https://jira.target.com/browse/CHECKOUT-1646
+    exclude group: 'org.testng', module: 'testng'
+    exclude group: 'com.rabbitmq', module: 'amqp-client' // amqp-client is the RabbitMQ Java client library and RabbitMQ is not used
+}
+
+shadowJar {
+    archiveName = "web_checkouts-v1-${version}.jar"
+    transform(Log4j2PluginsCacheFileTransformer)
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+}
+
+idea {
+    module {
+        inheritOutputDirs = true
+    }
+}
+
+repositories {
+    maven { url 'https://binrepo.target.com/artifactory/maven-central'}
+    maven { url 'https://binrepo.target.com/artifactory/TargetOSS' }
+    maven { url 'https://binrepo.target.com/artifactory/confluent' }
+    maven { url 'https://binrepo.target.com/artifactory/checkout-mod' }
+    maven { url "https://binrepo.target.com/artifactory/apps-release-local" }
+    maven { url 'https://binrepo.target.com/artifactory/digital-checkout' }
+}
+
+artifactory {
+    contextUrl = 'https://binrepo.target.com/artifactory'
+    publish {
+        repository {
+            repoKey = 'checkout-mod'
+            //Username must be provided via the property artifactoryPublishRepositoryUsername
+            username = project.hasProperty('BINREPO_ARTIFACTORY_USER') ? BINREPO_ARTIFACTORY_USER : ''
+            //Password must be provided via the property artifactoryPublishRepositoryPassword
+            password = project.hasProperty('BINREPO_ARTIFACTORY_PWD') ? BINREPO_ARTIFACTORY_PWD : ''
+            maven = true
+        }
+        defaults {
+            publications('mavenJava')
+        }
+    }
+}
+
+tasks.withType(JavaExec) {
+    if (System.getProperty('debug', 'false') == 'true') {
+        jvmArgs '-Xdebug', '-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005'
+    }
+}
+
+openApiGenerate {
+    generatorName = "kotlin"
+    inputSpec = rootProject.file("./api-spec/web_checkouts-v1.yaml").toString()
+    outputDir = "$buildDir/openapi-code-webcheckouts".toString()
+    modelPackage = "webcheckouts.http.model"
+    generateModelTests = false
+    generateModelDocumentation = false
+    globalProperties = ["models": ""]
+    configOptions = [
+            enumPropertyNaming: "UPPERCASE",
+            dateLibrary: "java8",
+            serializationLibrary: "jackson",
+            modelMutable: "true"
+    ]
+}
+
+task sourceJar(type: org.gradle.jvm.tasks.Jar) {
+    classifier 'sources'
+    from project.sourceSets.main.allSource
+}
+
+project.artifacts {
+    archives sourceJar
+}
+
+task copyLargeConfigs(type: Copy) {
+    from 'src/main/resources/storelocations.yml'
+    into 'build/resources/main'
+}
+
+processResources {
+    exclude "storelocations.yml"
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    kotlinOptions {
+        jvmTarget = "11"
+    }
+}
+
+sourceSets.main.kotlin.srcDirs += "$buildDir/openapi-code-webcheckouts"
+compileKotlin.dependsOn tasks.openApiGenerate
+processResources.dependsOn copyLargeConfigs
+
+// fixes intellij debugger erroring out when using Java 11
+run {
+    systemProperties.remove("java.endorsed.dirs")
+    environment('RATPACK_MODULES_ADDITIONAL_PROPERTIES', project.rootProject.file("application.properties").path)
+    environment('CLOUD_ENVIRONMENT', 'local')
+}
+
+testFunctional {
+    environment('CLOUD_ENVIRONMENT', 'functionaltest')
+}
+
+task smokeTest(type: Test) {
+    useJUnitPlatform()
+    description = 'Runs smoke tests'
+    outputs.upToDateWhen { false }
+    systemProperty "micronaut.environments", System.getProperty("env")
+    systemProperties System.properties
+    testClassesDirs = sourceSets.smoke.output.classesDirs
+    classpath = sourceSets.smoke.runtimeClasspath
+    reports.junitXml.destination = file('build/test-results/smoke')
+    reports.html.destination = file('build/test-results/smoke')
+}
+
+nebulaRelease {
+    addReleaseBranchPattern(/hotfix\/v(\d)+.(\d)+.(\d)+/)
+}
